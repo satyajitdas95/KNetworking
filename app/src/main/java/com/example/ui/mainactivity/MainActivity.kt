@@ -1,4 +1,4 @@
-package com.example
+package com.example.ui.mainactivity
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -8,11 +8,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.MyApplication
+import com.example.base.UiState
+import com.example.ui.generic.showLoading
 import com.example.ui.theme.KNetworkingExample
-import com.satyajit.knetworking.KNetworking
-import com.satyajit.knetworking.KNetworkingConfig
+import com.example.ui.userScreen.ListOfUsers
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,8 +28,27 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Greeting("Android")
-                    val knetwork= KNetworking.create(applicationContext, KNetworkingConfig(baseUrl = "www.google.com"))
+
+                    val mainViewModel: MainViewModel =
+                        viewModel(factory = (application as MyApplication).provideSpecificViewModelFactory())
+
+                    val uiState=mainViewModel.uiState.collectAsState().value
+
+                    when(uiState){
+                        is UiState.Error->{
+                            showLoading()
+                        }
+
+                        is UiState.Loading->{
+
+                        }
+
+                        is UiState.Success->{
+//                            ListOfUsers(uiState.data)
+                            Text(text = uiState.data)
+                        }
+                    }
+
                 }
             }
         }
