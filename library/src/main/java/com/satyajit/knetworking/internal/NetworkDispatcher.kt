@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 
 class NetworkDispatcher(private val okHttpClient: OkHttpClient){
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main +
             CoroutineExceptionHandler { _, _ ->
 

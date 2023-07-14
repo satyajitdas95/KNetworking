@@ -3,11 +3,7 @@ package com.example.ui.mainactivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.base.UiState
-import com.satyajit.knetworking.KNetworkRequest
 import com.satyajit.knetworking.KNetworking
-import com.satyajit.knetworking.Parameters
-import com.satyajit.knetworking.RequestType
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -43,7 +39,6 @@ class MainViewModel(var kNetworking: KNetworking) : ViewModel() {
     private fun postUser() {
         val kNetworkRequest = kNetworking.newPostRequestBuilder(url = "https://reqres.in/api/users")
             .tag("Tag1")
-            .parameters(listOf(Pair("name","Satyajit Das"),Pair("job","Software Engineer")))
             .headers(mapOf(Pair("Auth","3294yh")))
             .build()
 
@@ -56,6 +51,7 @@ class MainViewModel(var kNetworking: KNetworking) : ViewModel() {
         }
 
     }
+
 
 
 }

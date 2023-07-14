@@ -1,7 +1,7 @@
 package com.satyajit.knetworking.internal
 
 import com.satyajit.knetworking.KNetworkRequest
-import com.satyajit.knetworking.RequestType
+import com.satyajit.knetworking.RequestMethod
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.FormBody
@@ -28,62 +28,45 @@ class RawNetworkCall(
     suspend fun run(listener: KNetworkRequest.Listener) {
         withContext(Dispatchers.IO) {
 
+            val request = Request.Builder()
+            request.url(kNetworkRequest.url)
+
             when (kNetworkRequest.requestType) {
-                RequestType.Get -> {
-                    val request = Request.Builder()
+                RequestMethod.Get -> {
                     addHeader(request, kNetworkRequest.headers)
-                    request.url(kNetworkRequest.url)
-                    makeNetworkCall(request.build(), listener)
                 }
 
-                RequestType.Post -> {
-                    val request = Request.Builder()
+                RequestMethod.Head -> {
+                    addHeader(request, kNetworkRequest.headers)
+                }
+
+                RequestMethod.Post -> {
                     addHeader(request, kNetworkRequest.headers)
                     addParameters(request, kNetworkRequest.parameters)
-                    request.url(kNetworkRequest.url)
-                    makeNetworkCall(request.build(), listener)
                 }
 
-                RequestType.Put -> {
-                    val request = Request.Builder()
-                        .url(kNetworkRequest.url)
-                        .build()
-                    makeNetworkCall(request, listener)
+                RequestMethod.Put -> {
+                    addHeader(request, kNetworkRequest.headers)
+                    if (!kNetworkRequest.parameters.isNullOrEmpty()) addParameters(
+                        request,
+                        kNetworkRequest.parameters
+                    )
                 }
 
-                RequestType.Delete -> {
-                    val request = Request.Builder()
-                        .url(kNetworkRequest.url)
-                        .build()
-                    makeNetworkCall(request, listener)
+                RequestMethod.Delete -> {
+                    addHeader(request, kNetworkRequest.headers)
+                    addParameters(request, kNetworkRequest.parameters)
                 }
 
-                RequestType.Patch -> {
-                    val request = Request.Builder()
-                        .url(kNetworkRequest.url)
-                        .build()
-                    makeNetworkCall(request, listener)
+                RequestMethod.Patch -> {
+                    addHeader(request, kNetworkRequest.headers)
+                    addParameters(request, kNetworkRequest.parameters)
                 }
 
-                RequestType.Head -> {
-                    val request = Request.Builder()
-                        .url(kNetworkRequest.url)
-                        .build()
-                    makeNetworkCall(request, listener)
-                }
-
-
-                RequestType.Options -> {
-                    val request = Request.Builder()
-                        .url(kNetworkRequest.url)
-                        .build()
-                    makeNetworkCall(request, listener)
-                }
             }
-
+            makeNetworkCall(request.build(), listener)
         }
     }
-
 
 
     private fun addHeader(request: Request.Builder, headers: Map<String, String>?) {
@@ -107,12 +90,17 @@ class RawNetworkCall(
         }
     }
 
-    fun makeNetworkCall(request: Request, listener: KNetworkRequest.Listener) {
-
+    private fun makeNetworkCall(request: Request, listener: KNetworkRequest.Listener) {
         okHttpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Unexpected code $response")
-            listener.onSuccess(response.body?.byteString().toString())
+            if (!response.isSuccessful) {
+                listener.onError(response.message)
+                throw IOException("Unexpected code $response")
+            }
+
+            listener.onSuccess("")
         }
     }
 
 }
+
+

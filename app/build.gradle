@@ -58,6 +58,7 @@ dependencies {
     }
 
     implementation project(':library')
+    implementation project(':converter-gson')
 
     implementation 'androidx.core:core-ktx:1.10.1'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
