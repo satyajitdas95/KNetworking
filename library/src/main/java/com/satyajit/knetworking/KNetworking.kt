@@ -1,15 +1,16 @@
 package com.satyajit.knetworking
 
 import android.content.Context
+import com.google.gson.Gson
 import com.satyajit.knetworking.internal.Converter
 import com.satyajit.knetworking.internal.NetworkDispatcher
 import com.satyajit.knetworking.internal.NetworkTaskRequestQueue
-import okhttp3.OkHttpClient
+import com.satyajit.knetworking.internal.ParserFactory
 
 open class KNetworking private constructor(
     context: Context,
     private val kNetworkingConfig: KNetworkingConfig,
-    private val converter: Converter? = null
+    private val converter: ParserFactory = ParserFactory()
 ) {
 
     companion object {
@@ -17,7 +18,7 @@ open class KNetworking private constructor(
             context: Context,
             kNetworkingConfig: KNetworkingConfig = KNetworkingConfig(), converter: Converter? = null
         ): KNetworking {
-            return KNetworking(context = context, kNetworkingConfig = kNetworkingConfig, converter = converter)
+            return KNetworking(context = context, kNetworkingConfig = kNetworkingConfig)
         }
     }
 
@@ -32,12 +33,12 @@ open class KNetworking private constructor(
     fun newGetRequestBuilder(
         url: String,
     ): KNetworkRequest.GetBuilder {
-        return KNetworkRequest.GetBuilder(url = url)
+        return KNetworkRequest.GetBuilder(url = url,converter)
     }
 
-    fun newPostRequestBuilder(url: String): KNetworkRequest.PostBuilder {
-        return KNetworkRequest.PostBuilder(url = url)
-    }
+//    fun newPostRequestBuilder(url: String): KNetworkRequest.PostBuilder {
+//        return KNetworkRequest.PostBuilder(url = url)
+//    }
 
     inline fun enqueue(
         kNetworkRequest: KNetworkRequest,

@@ -31,39 +31,39 @@ class RawNetworkCall(
             val request = Request.Builder()
             request.url(kNetworkRequest.url)
 
-            when (kNetworkRequest.requestType) {
-                RequestMethod.Get -> {
-                    addHeader(request, kNetworkRequest.headers)
-                }
-
-                RequestMethod.Head -> {
-                    addHeader(request, kNetworkRequest.headers)
-                }
-
-                RequestMethod.Post -> {
-                    addHeader(request, kNetworkRequest.headers)
-                    addParameters(request, kNetworkRequest.parameters)
-                }
-
-                RequestMethod.Put -> {
-                    addHeader(request, kNetworkRequest.headers)
-                    if (!kNetworkRequest.parameters.isNullOrEmpty()) addParameters(
-                        request,
-                        kNetworkRequest.parameters
-                    )
-                }
-
-                RequestMethod.Delete -> {
-                    addHeader(request, kNetworkRequest.headers)
-                    addParameters(request, kNetworkRequest.parameters)
-                }
-
-                RequestMethod.Patch -> {
-                    addHeader(request, kNetworkRequest.headers)
-                    addParameters(request, kNetworkRequest.parameters)
-                }
-
-            }
+//            when (kNetworkRequest.requestType) {
+//                RequestMethod.Get -> {
+//                    addHeader(request, kNetworkRequest.headers)
+//                }
+//
+//                RequestMethod.Head -> {
+//                    addHeader(request, kNetworkRequest.headers)
+//                }
+//
+//                RequestMethod.Post -> {
+//                    addHeader(request, kNetworkRequest.headers)
+//                    addParameters(request, kNetworkRequest.parameters)
+//                }
+//
+//                RequestMethod.Put -> {
+//                    addHeader(request, kNetworkRequest.headers)
+//                    if (!kNetworkRequest.parameters.isNullOrEmpty()) addParameters(
+//                        request,
+//                        kNetworkRequest.parameters
+//                    )
+//                }
+//
+//                RequestMethod.Delete -> {
+//                    addHeader(request, kNetworkRequest.headers)
+//                    addParameters(request, kNetworkRequest.parameters)
+//                }
+//
+//                RequestMethod.Patch -> {
+//                    addHeader(request, kNetworkRequest.headers)
+//                    addParameters(request, kNetworkRequest.parameters)
+//                }
+//
+//            }
             makeNetworkCall(request.build(), listener)
         }
     }
@@ -75,7 +75,6 @@ class RawNetworkCall(
                 request.addHeader(key, value)
             }
         }
-
     }
 
     private fun addParameters(request: Request.Builder, parameters: List<Pair<String, String>>?) {

@@ -1,8 +1,6 @@
 package com.satyajit.knetworking
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.widget.ImageView
+import com.satyajit.knetworking.internal.ParserFactory
 import com.satyajit.knetworking.utils.getUniqueId
 import kotlinx.coroutines.Job
 import okhttp3.CacheControl
@@ -16,14 +14,9 @@ class KNetworkRequest private constructor(
     internal var requestID: Int,
     internal var url: String,
     internal var tag: String?,
-    internal var decodeConfig: Bitmap.Config?,
-    internal var decodeOptions: BitmapFactory.Options?,
-    internal var maxWidth: Int?,
-    internal var maxHeight: Int?,
-    internal var scaleType: ImageView.ScaleType?,
-    internal var headers: HashMap<String, List<String>>? = HashMap(),
-    internal var queryParameterMap: HashMap<String, List<String>>? = HashMap(),
-    internal var pathParametersMap: HashMap<String, String>? = HashMap(),
+    internal var headers: HashMap<String, MutableList<String>>? = null,
+    internal var queryParameterMap: HashMap<String, MutableList<String>>? = null,
+    internal var pathParametersMap: HashMap<String, String>? = null,
     internal var cacheControl: CacheControl? = null,
     internal var userAgent: String? = null,
     internal var listener: Listener?,
@@ -31,33 +24,22 @@ class KNetworkRequest private constructor(
     internal lateinit var job: Job
 
 
-    data class GetBuilder(private val url: String) {
-        /*Pre Defined Methods*/
+    data class GetBuilder(private val url: String, val converter: ParserFactory) {
         private val requestMethod: RequestMethod = RequestMethod.Get
-        private var priority: Priority? = Priority.MEDIUM
+
+        private var priority: Priority = Priority.MEDIUM
+
         private val requestID = getUniqueId(url)
 
         private val callUrl = url
 
-        /*User Define values*/
-
         private var tag: String? = null
 
-        private var decodeConfig: Bitmap.Config? = null
+        private var headersMap: HashMap<String, MutableList<String>> = hashMapOf()
 
-        private var decodeOptions: BitmapFactory.Options? = null
+        private var queryParameterMap: HashMap<String, MutableList<String>> = hashMapOf()
 
-        private var maxWidth: Int? = null
-
-        private var maxHeight: Int? = null
-
-        private var scaleType: ImageView.ScaleType? = null
-
-        private var headers: HashMap<String, List<String>>? = null
-
-        private var queryParameterMap: HashMap<String, List<String>>? = null
-
-        private var pathParametersMap: HashMap<String, String>? = null
+        private var pathParametersMap: HashMap<String, String> = hashMapOf()
 
         private var cacheControl: CacheControl? = null
 
@@ -66,37 +48,122 @@ class KNetworkRequest private constructor(
         private var listener: Listener? = null
 
         fun setPriority(priority: Priority) = apply { this.priority = priority }
+
         fun setTag(tag: String) = apply { this.tag = tag }
-        fun setDecodeConfig(decodeConfig: Bitmap.Config) =
-            apply { this.decodeConfig = decodeConfig }
 
-        fun setDecodeOptions(decodeOptions: BitmapFactory.Options) =
-            apply { this.decodeOptions = decodeOptions }
+        fun setHeaders(key: String, value: String): GetBuilder {
+            var headerList: MutableList<String>? = headersMap[key]
+            if (headerList == null) {
+                headerList = mutableListOf()
+                headersMap[key] = headerList
+            }
+            if (!headerList.contains(value)) {
+                headerList.add(value)
+            }
 
-        fun setMaxWidht(maxWidth: Int) = apply { this.maxWidth = maxWidth }
-        fun setMaxHeight(maxHeight: Int) = apply { this.maxHeight = maxHeight }
-        fun setScaleType(scaleType: ImageView.ScaleType) = apply { this.scaleType = scaleType }
-        fun setHeaders(headers: HashMap<String, List<String>>) = apply { this.headers = headers }
-        fun setQueryParametersMap(queryParametersMap: HashMap<String, List<String>>) =
-            apply { this.queryParameterMap = queryParametersMap }
-        fun setPathParametersMap(pathParametersMap: HashMap<String, String>) = apply { this.pathParametersMap = pathParametersMap }
-        fun setCacheControl(cacheControl: CacheControl) = apply { this.cacheControl = cacheControl }
-        fun setUserAgent(userAgent: String) = apply { this.userAgent = userAgent }
+            return this.apply { this.headersMap[key] = headerList }
+        }
+
+
+        fun setHeaders(headerMap: HashMap<String, String>): GetBuilder {
+            return setHeaders(headerMap.toMap())
+        }
+
+        fun setHeaders(headerMap: Map<String, String>): GetBuilder {
+            headerMap.run {
+                for ((key, value) in this.entries) {
+                    setHeaders(key = key, value = value)
+                }
+            }
+
+            return this
+        }
+
+        fun setHeaders(T: Any): GetBuilder {
+            return this.apply {
+                setHeaders(
+                    converter.getStringMap(T)
+                )
+            }
+        }
+
+        fun setQueryParameter(key: String, value: String): GetBuilder {
+            var list: MutableList<String>? = queryParameterMap[key]
+
+            if (list == null) {
+                list = mutableListOf()
+                queryParameterMap[key] = list
+            }
+
+            if (!list.contains(value)) {
+                list.add(value)
+            }
+
+            return this@GetBuilder
+        }
+
+
+        fun setQueryParameter(queryParameterMap: HashMap<String, String>): GetBuilder {
+            return this@GetBuilder.setQueryParameter(queryParameterMap.toMap())
+        }
+
+        fun setQueryParameter(queryParameterMap: Map<String, String>): GetBuilder {
+            queryParameterMap.let {
+                for ((key, value) in it.entries) {
+                    setQueryParameter(key, value)
+                }
+            }
+            return this@GetBuilder
+        }
+
+        fun setQueryParameter(T: Any): GetBuilder {
+            T.run {
+                setQueryParameter(
+                    converter.getStringMap(this)
+                )
+            }
+            return this@GetBuilder
+        }
+
+        fun setPathParameter(key: String, value: String): GetBuilder {
+            this.pathParametersMap[key] = value
+            return this@GetBuilder
+        }
+
+        fun setPathParameter(pathParameterMap: Map<String, String>): GetBuilder {
+            this.pathParametersMap.putAll(pathParameterMap)
+            return this@GetBuilder
+        }
+
+        fun setPathParameter(pathParameterMap: HashMap<String, String>): GetBuilder {
+            return this@GetBuilder.setPathParameter(pathParameterMap.toMap())
+        }
+
+
+        fun setPathParameter(T: Any): GetBuilder {
+            T.apply {
+                setPathParameter(
+                    converter.getStringMap(this)
+                )
+            }
+
+            return this@GetBuilder
+        }
+
+        fun setCacheControl(cacheControl: CacheControl) =
+            apply { this@GetBuilder.cacheControl = cacheControl }
+
+        fun setUserAgent(userAgent: String) = apply { this@GetBuilder.userAgent = userAgent }
 
 
         fun build(): KNetworkRequest {
             return KNetworkRequest(
                 requestType = requestMethod,
-                priority = priority!!,
+                priority = priority,
                 requestID = requestID,
                 url = callUrl,
                 tag = tag,
-                decodeConfig = decodeConfig,
-                decodeOptions = decodeOptions,
-                maxWidth = maxWidth,
-                maxHeight = maxHeight,
-                scaleType = scaleType,
-                headers = headers,
+                headers = headersMap,
                 queryParameterMap = queryParameterMap,
                 pathParametersMap = pathParametersMap,
                 cacheControl = cacheControl,
@@ -106,12 +173,6 @@ class KNetworkRequest private constructor(
 
         }
     }
-
-
-
-
-
-
 
     interface Listener {
         fun onSuccess(response: String)
