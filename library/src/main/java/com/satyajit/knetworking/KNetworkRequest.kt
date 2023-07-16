@@ -4,6 +4,11 @@ import com.satyajit.knetworking.internal.ParserFactory
 import com.satyajit.knetworking.utils.getUniqueId
 import kotlinx.coroutines.Job
 import okhttp3.CacheControl
+import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
 
 typealias Parameters = List<Pair<String, String>>
 
@@ -14,9 +19,15 @@ class KNetworkRequest private constructor(
     internal var requestID: Int,
     internal var url: String,
     internal var tag: String?,
+    internal var applicationJsonString: String? = null,
+    internal var stringBody: String? = null,
+    internal var customContentType: String? = null,
+    internal var mFile: File? = null,
     internal var headers: HashMap<String, MutableList<String>>? = null,
     internal var queryParameterMap: HashMap<String, MutableList<String>>? = null,
     internal var pathParametersMap: HashMap<String, String>? = null,
+    internal var bodyParameterMap: HashMap<String, String>? = null,
+    internal var urlEncodedFormBodyParameterMap: HashMap<String, String>? = null,
     internal var cacheControl: CacheControl? = null,
     internal var userAgent: String? = null,
     internal var listener: Listener?,
@@ -185,11 +196,23 @@ class KNetworkRequest private constructor(
 
         private var tag: String? = null
 
+        private var applicationJsonString: String? = null
+
+        private var stringBody: String? = null
+
+        private var customContentType: String? = null
+
+        private var file: File? = null
+
         private var headersMap: HashMap<String, MutableList<String>> = hashMapOf()
 
         private var queryParameterMap: HashMap<String, MutableList<String>> = hashMapOf()
 
         private var pathParametersMap: HashMap<String, String> = hashMapOf()
+
+        private var bodyParameterMap: HashMap<String, String> = hashMapOf()
+
+        private var urlEncodedFormBodyParameterMap: HashMap<String, String> = hashMapOf()
 
         private var cacheControl: CacheControl? = null
 
@@ -306,6 +329,77 @@ class KNetworkRequest private constructor(
         fun setUserAgent(userAgent: String) = apply { this@PostBuilder.userAgent = userAgent }
 
 
+        fun setBodyParameter(key: String, value: String): PostBuilder {
+            bodyParameterMap.put(key, value)
+            return this@PostBuilder
+        }
+
+        fun setBodyParameter(bodyParameterMap: Map<String, String>): PostBuilder {
+            this.bodyParameterMap.putAll(bodyParameterMap)
+            return this@PostBuilder
+        }
+
+        fun setBodyParameter(T: Any?): PostBuilder {
+            T?.let {
+                bodyParameterMap.putAll(
+                    converter.getStringMap(it)
+                )
+            }
+            return this@PostBuilder
+        }
+
+        fun setUrlEncodeFormBodyParameter(key: String, value: String): PostBuilder {
+            urlEncodedFormBodyParameterMap[key] = value
+            return this@PostBuilder
+        }
+
+        fun setUrlEncodeFormBodyParameter(bodyParameterMap: Map<String, String>): PostBuilder {
+            urlEncodedFormBodyParameterMap.putAll(bodyParameterMap)
+            return this@PostBuilder
+        }
+
+        fun setUrlEncodeFormBodyParameter(T: Any?): PostBuilder {
+            T?.let {
+                urlEncodedFormBodyParameterMap.putAll(converter.getStringMap(it))
+            }
+            return this@PostBuilder
+        }
+
+        fun setApplicationJsonBody(T: Any?): PostBuilder {
+            T?.let {
+                applicationJsonString = converter.getString(it)
+            }
+            return this@PostBuilder
+        }
+
+        fun setJSONObjectBody(jsonObject: JSONObject): PostBuilder {
+            applicationJsonString = jsonObject.toString()
+            return this@PostBuilder
+        }
+
+        fun setJSONArrayBody(jsonArray: JSONArray?): PostBuilder {
+            if (jsonArray != null) {
+                applicationJsonString = jsonArray.toString()
+            }
+            return this@PostBuilder
+        }
+
+        fun setStringBody(stringBody: String): PostBuilder {
+            this.stringBody = stringBody
+            return this@PostBuilder
+        }
+
+        fun setFileBody(file: File): PostBuilder {
+            this.file = file
+            return this@PostBuilder
+        }
+
+        fun setContentType(contentType: String): PostBuilder {
+            customContentType = contentType
+            return this@PostBuilder
+        }
+
+
         fun build(): KNetworkRequest {
             return KNetworkRequest(
                 requestType = requestMethod,
@@ -313,14 +407,18 @@ class KNetworkRequest private constructor(
                 requestID = requestID,
                 url = callUrl,
                 tag = tag,
+                applicationJsonString = applicationJsonString,
+                stringBody = stringBody,
+                customContentType = customContentType?.toMediaTypeOrNull().toString(),
+                mFile = file,
                 headers = headersMap,
+                bodyParameterMap = bodyParameterMap,
+                urlEncodedFormBodyParameterMap = urlEncodedFormBodyParameterMap,
                 queryParameterMap = queryParameterMap,
                 pathParametersMap = pathParametersMap,
                 cacheControl = cacheControl,
-                userAgent = userAgent,
-                listener = listener
+                userAgent = userAgent, listener = listener
             )
-
         }
     }
 

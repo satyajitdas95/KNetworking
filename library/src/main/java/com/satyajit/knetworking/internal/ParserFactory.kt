@@ -19,4 +19,8 @@ class ParserFactory {
         }
         return emptyMap()
     }
+
+    fun getString(T:Any) :String{
+        return ""
+    }
 }
