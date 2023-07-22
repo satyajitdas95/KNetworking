@@ -1,7 +1,6 @@
 package com.satyajit.knetworking
 
 import android.content.Context
-import com.google.gson.Gson
 import com.satyajit.knetworking.internal.Converter
 import com.satyajit.knetworking.internal.NetworkDispatcher
 import com.satyajit.knetworking.internal.NetworkTaskRequestQueue
@@ -22,7 +21,6 @@ open class KNetworking private constructor(
         }
     }
 
-
     private val dispatcher = NetworkDispatcher(kNetworkingConfig.okhttpClient)
     private val reqQueue = NetworkTaskRequestQueue(dispatcher)
     fun enqueue(networkRequest: KNetworkRequest, listener: KNetworkRequest.Listener) {
@@ -33,12 +31,39 @@ open class KNetworking private constructor(
     fun newGetRequestBuilder(
         url: String,
     ): KNetworkRequest.GetBuilder {
-        return KNetworkRequest.GetBuilder(url = url,converter)
+        return KNetworkRequest.GetBuilder(url = url, converter, RequestMethod.Get)
     }
 
-//    fun newPostRequestBuilder(url: String): KNetworkRequest.PostBuilder {
-//        return KNetworkRequest.PostBuilder(url = url)
-//    }
+    fun newHeadRequestBuilder(
+        url: String,
+    ): KNetworkRequest.HeadBuilder {
+        return KNetworkRequest.HeadBuilder(url = url, converter)
+    }
+
+    fun newPostRequestBuilder(
+        url: String,
+    ): KNetworkRequest.PostBuilder {
+        return KNetworkRequest.PostBuilder(url = url, converter)
+    }
+
+    fun newPutRequestBuilder(
+        url: String,
+    ): KNetworkRequest.PutRequestBuilder {
+        return KNetworkRequest.PutRequestBuilder(url = url, converter)
+    }
+
+    fun newDeleteRequestBuilder(
+        url: String,
+    ): KNetworkRequest.DeleteRequestBuilder {
+        return KNetworkRequest.DeleteRequestBuilder(url = url, converter)
+    }
+
+    fun newPatchRequestBuilder(
+        url: String,
+    ): KNetworkRequest.PatchRequestBuilder {
+        return KNetworkRequest.PatchRequestBuilder(url = url, converter)
+    }
+
 
     inline fun enqueue(
         kNetworkRequest: KNetworkRequest,

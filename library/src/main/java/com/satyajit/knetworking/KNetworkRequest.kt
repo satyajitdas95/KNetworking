@@ -4,16 +4,14 @@ import com.satyajit.knetworking.internal.ParserFactory
 import com.satyajit.knetworking.utils.getUniqueId
 import kotlinx.coroutines.Job
 import okhttp3.CacheControl
-import okhttp3.MediaType
+import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
-typealias Parameters = List<Pair<String, String>>
 
-
-class KNetworkRequest private constructor(
+data class KNetworkRequest private constructor(
     internal var requestType: RequestMethod,
     internal var priority: Priority,
     internal var requestID: Int,
@@ -23,7 +21,7 @@ class KNetworkRequest private constructor(
     internal var stringBody: String? = null,
     internal var customContentType: String? = null,
     internal var mFile: File? = null,
-    internal var headers: HashMap<String, MutableList<String>>? = null,
+    internal var headersMap: HashMap<String, MutableList<String>>? = null,
     internal var queryParameterMap: HashMap<String, MutableList<String>>? = null,
     internal var pathParametersMap: HashMap<String, String>? = null,
     internal var bodyParameterMap: HashMap<String, String>? = null,
@@ -35,8 +33,12 @@ class KNetworkRequest private constructor(
     internal lateinit var job: Job
 
 
-    data class GetBuilder(private val url: String, val converter: ParserFactory) {
-        private val requestMethod: RequestMethod = RequestMethod.Get
+    open class GetBuilder(
+        private val url: String,
+        private val converter: ParserFactory,
+        private var requestType: RequestMethod = RequestMethod.Get
+    ) {
+        private val requestMethod: RequestMethod = requestType
 
         private var priority: Priority = Priority.MEDIUM
 
@@ -174,7 +176,7 @@ class KNetworkRequest private constructor(
                 requestID = requestID,
                 url = callUrl,
                 tag = tag,
-                headers = headersMap,
+                headersMap = headersMap,
                 queryParameterMap = queryParameterMap,
                 pathParametersMap = pathParametersMap,
                 cacheControl = cacheControl,
@@ -185,8 +187,18 @@ class KNetworkRequest private constructor(
         }
     }
 
-    data class PostBuilder(private val url: String, val converter: ParserFactory) {
-        private val requestMethod: RequestMethod = RequestMethod.Post
+    class HeadBuilder(
+        url: String,
+        converter: ParserFactory,
+        requestType: RequestMethod = RequestMethod.Head
+    ) : GetBuilder(url = url, converter = converter, requestType = requestType)
+
+    open class PostBuilder(
+        url: String,
+        private val converter: ParserFactory,
+        requestType: RequestMethod = RequestMethod.Post
+    ) {
+        private val requestMethod: RequestMethod = requestType
 
         private var priority: Priority = Priority.MEDIUM
 
@@ -411,7 +423,7 @@ class KNetworkRequest private constructor(
                 stringBody = stringBody,
                 customContentType = customContentType?.toMediaTypeOrNull().toString(),
                 mFile = file,
-                headers = headersMap,
+                headersMap = headersMap,
                 bodyParameterMap = bodyParameterMap,
                 urlEncodedFormBodyParameterMap = urlEncodedFormBodyParameterMap,
                 queryParameterMap = queryParameterMap,
@@ -420,6 +432,45 @@ class KNetworkRequest private constructor(
                 userAgent = userAgent, listener = listener
             )
         }
+    }
+
+    class PutRequestBuilder(
+        url: String,
+        converter: ParserFactory,
+        requestType: RequestMethod =RequestMethod.Put
+    ) : PostBuilder(url, converter, requestType)
+
+    class DeleteRequestBuilder(
+        url: String,
+        converter: ParserFactory,
+        requestType: RequestMethod =RequestMethod.Delete
+    ) : PostBuilder(url, converter, requestType)
+
+    class PatchRequestBuilder(
+        url: String,
+        converter: ParserFactory,
+        requestType: RequestMethod =RequestMethod.Patch
+    ) : PostBuilder(url, converter, requestType)
+
+
+
+    fun getHeaders(): Headers {
+        val builder = Headers.Builder()
+        try {
+            headersMap?.let {
+                val entries: Set<Map.Entry<String, List<String>?>> = it.entries
+                for ((name, list) in entries) {
+                    if (list != null) {
+                        for (value in list) {
+                            builder.add(name, value)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return builder.build()
     }
 
     interface Listener {
@@ -434,9 +485,10 @@ class KNetworkRequest private constructor(
 sealed class RequestMethod {
     object Get : RequestMethod()
     object Post : RequestMethod()
+    object Head : RequestMethod()
     object Put : RequestMethod()
     object Delete : RequestMethod()
+    object Options : RequestMethod()
     object Patch : RequestMethod()
-    object Head : RequestMethod()
 }
 
