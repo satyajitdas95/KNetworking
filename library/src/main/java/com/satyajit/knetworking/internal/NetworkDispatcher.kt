@@ -1,11 +1,13 @@
 package com.satyajit.knetworking.internal
 
 import com.satyajit.knetworking.KNetworkRequest
+import com.satyajit.knetworking.dispacther.DispatcherProviderImpl
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.newFixedThreadPoolContext
 import okhttp3.OkHttpClient
 
 class NetworkDispatcher(private val okHttpClient: OkHttpClient){
@@ -15,6 +17,8 @@ class NetworkDispatcher(private val okHttpClient: OkHttpClient){
 
             })
 
+    private val  dispatchers = DispatcherProviderImpl()
+
     fun enqueue(req: KNetworkRequest) {
         val job = scope.launch {
             execute(req)
@@ -23,7 +27,7 @@ class NetworkDispatcher(private val okHttpClient: OkHttpClient){
     }
 
     private suspend fun execute(request: KNetworkRequest) {
-        RawNetworkCall(request,okHttpClient).run(
+        RawNetworkCall(request,okHttpClient,dispatchers).run(
             onSuccess = {
                 executeOnMainThread { request.listener?.onSuccess(it) }
             },

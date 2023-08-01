@@ -22,13 +22,13 @@ class MainViewModel(var kNetworking: KNetworking) : ViewModel() {
 
     init {
         fetchAllUsers()
-        //postUser()
     }
 
     private fun fetchAllUsers() {
         data class TestHeader(var authorization:String,var apikey:String)
         data class TestQueryParam(var id:String)
         data class TestPathParam(var abc:String)
+        data class TestBodyParam(var name:String)
 
         val kNetworkRequestGet = kNetworking.newGetRequestBuilder(url = "https://reqres.in/api/users/{userID}/orders/{orderID}")
             .setTag("TestTag1")
@@ -58,7 +58,7 @@ class MainViewModel(var kNetworking: KNetworking) : ViewModel() {
 
             .build()
 
-        val kNetworkRequestPost : KNetworkRequest = kNetworking.newPostRequestBuilder(url = "https://reqres.in/api/users")
+        val kNetworkRequestPost : KNetworkRequest = kNetworking.newPostRequestBuilder(url = "https://abcexample.in/api/post")
             .setTag("TestTag1")
             .setPriority(Priority.MEDIUM)
 
@@ -80,15 +80,17 @@ class MainViewModel(var kNetworking: KNetworking) : ViewModel() {
             .setPathParameter(hashMapOf(Pair("PathParam4","PathParamValue4")))
             .setPathParameter(TestPathParam("PathParamValue5"))
 
+            .setBodyParameter("TestBody","TestBodyValue1")
+            .setBodyParameter(mapOf(Pair("TestBody2","TestBodyValue2")))
+            .setBodyParameter(mutableMapOf(Pair("TestBody3","TestBodyValue3")))
+            .setBodyParameter(hashMapOf(Pair("TestBody4","TestBodyValue4")))
+            .setBodyParameter(TestBodyParam("TestBodyParam5"))
+
             .setCacheControl(CacheControl.Builder().noCache().maxAge(1,TimeUnit.DAYS).build())
             .setUserAgent("AndroidApp")
 
             .build()
 
-        val url= "https://reqres.in/api/users/test 1/orders/abcd"
-
-        val knetGet= kNetworkRequestGet
-        val knetPost= kNetworkRequestPost
 
         viewModelScope.launch {
             kNetworking.enqueue(kNetworkRequestGet, onSuccess = {

@@ -1,7 +1,8 @@
 package com.satyajit.knetworking
 
+import com.satyajit.knetworking.internal.KNetworkingConstant
 import com.satyajit.knetworking.internal.ParserFactory
-import com.satyajit.knetworking.utils.getUniqueId
+import com.satyajit.knetworking.utils.Utils
 import kotlinx.coroutines.Job
 import okhttp3.CacheControl
 import okhttp3.Headers
@@ -9,6 +10,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import kotlin.system.measureTimeMillis
 
 
 data class KNetworkRequest private constructor(
@@ -27,7 +29,7 @@ data class KNetworkRequest private constructor(
     internal var bodyParameterMap: HashMap<String, String>? = null,
     internal var urlEncodedFormBodyParameterMap: HashMap<String, String>? = null,
     internal var cacheControl: CacheControl? = null,
-    internal var userAgent: String? = null,
+    internal var userAgent: String,
     internal var listener: Listener?,
 ) {
     internal lateinit var job: Job
@@ -42,7 +44,7 @@ data class KNetworkRequest private constructor(
 
         private var priority: Priority = Priority.MEDIUM
 
-        private val requestID = getUniqueId(url)
+        private val requestID = Utils.getUniqueId(url)
 
         private val callUrl = url
 
@@ -56,7 +58,7 @@ data class KNetworkRequest private constructor(
 
         private var cacheControl: CacheControl? = null
 
-        private var userAgent: String? = null
+        private var userAgent: String = KNetworkingConstant.USER_AGENT_DEFAULT_VALUE
 
         private var listener: Listener? = null
 
@@ -202,7 +204,7 @@ data class KNetworkRequest private constructor(
 
         private var priority: Priority = Priority.MEDIUM
 
-        private val requestID = getUniqueId(url)
+        private val requestID = Utils.getUniqueId(url)
 
         private val callUrl = url
 
@@ -228,7 +230,7 @@ data class KNetworkRequest private constructor(
 
         private var cacheControl: CacheControl? = null
 
-        private var userAgent: String? = null
+        private var userAgent: String = KNetworkingConstant.USER_AGENT_DEFAULT_VALUE
 
         private var listener: Listener? = null
 
@@ -272,7 +274,7 @@ data class KNetworkRequest private constructor(
             }
         }
 
-        fun setQueryParameter(key: String, value: String): PostBuilder {
+        fun setQueryParameter(key: String, value: String, isEncoded: Boolean=false): PostBuilder {
             var list: MutableList<String>? = queryParameterMap[key]
 
             if (list == null) {
@@ -280,55 +282,74 @@ data class KNetworkRequest private constructor(
                 queryParameterMap[key] = list
             }
 
-            if (!list.contains(value)) {
-                list.add(value)
+            if (!list.contains(value) && !list.contains(Utils.encodeValue(value = value, isEncoded = isEncoded))) {
+                list.add(Utils.encodeValue(value, isEncoded))
             }
 
             return this@PostBuilder
         }
 
 
-        fun setQueryParameter(queryParameterMap: HashMap<String, String>): PostBuilder {
-            return this@PostBuilder.setQueryParameter(queryParameterMap.toMap())
+        fun setQueryParameter(
+            queryParameterMap: HashMap<String, String>,
+            isEncoded: Boolean = false
+        ): PostBuilder {
+            return this@PostBuilder.setQueryParameter(queryParameterMap = queryParameterMap.toMap(), isEncoded = isEncoded)
         }
 
-        fun setQueryParameter(queryParameterMap: Map<String, String>): PostBuilder {
+        fun setQueryParameter(
+            queryParameterMap: Map<String, String>,
+            isEncoded: Boolean = false
+        ): PostBuilder {
             queryParameterMap.let {
                 for ((key, value) in it.entries) {
-                    setQueryParameter(key, value)
+                    setQueryParameter(key = key, value = value, isEncoded = isEncoded)
                 }
             }
             return this@PostBuilder
         }
 
-        fun setQueryParameter(T: Any): PostBuilder {
+        fun setQueryParameter(T: Any, isEncoded: Boolean = false): PostBuilder {
             T.run {
                 setQueryParameter(
-                    converter.getStringMap(this)
+                    converter.getStringMap(this), isEncoded
                 )
             }
             return this@PostBuilder
         }
 
-        fun setPathParameter(key: String, value: String): PostBuilder {
-            this.pathParametersMap[key] = value
+        fun setPathParameter(key: String, value: String, isEncoded: Boolean = false): PostBuilder {
+            this.pathParametersMap[key] = Utils.encodeValue(value, isEncoded)
             return this@PostBuilder
         }
 
-        fun setPathParameter(pathParameterMap: Map<String, String>): PostBuilder {
-            this.pathParametersMap.putAll(pathParameterMap)
+        fun setPathParameter(
+            pathParameterMap: Map<String, String>,
+            isEncoded: Boolean = false
+        ): PostBuilder {
+            val mutablePathParamMap = pathParameterMap.toMutableMap()
+            mutablePathParamMap.forEach { it ->
+                mutablePathParamMap[it.key] = Utils.encodeValue(it.value, isEncoded)
+            }
+            this.pathParametersMap.putAll(mutablePathParamMap)
             return this@PostBuilder
         }
 
-        fun setPathParameter(pathParameterMap: HashMap<String, String>): PostBuilder {
-            return this@PostBuilder.setPathParameter(pathParameterMap.toMap())
+        fun setPathParameter(
+            pathParameterMap: HashMap<String, String>,
+            isEncoded: Boolean = false
+        ): PostBuilder {
+            return this@PostBuilder.setPathParameter(
+                pathParameterMap = pathParameterMap.toMap(),
+                isEncoded = isEncoded
+            )
         }
 
 
-        fun setPathParameter(T: Any): PostBuilder {
+        fun setPathParameter(T: Any, isEncoded: Boolean=false): PostBuilder {
             T.apply {
                 setPathParameter(
-                    converter.getStringMap(this)
+                    pathParameterMap = converter.getStringMap(this), isEncoded = isEncoded
                 )
             }
 
@@ -342,7 +363,7 @@ data class KNetworkRequest private constructor(
 
 
         fun setBodyParameter(key: String, value: String): PostBuilder {
-            bodyParameterMap.put(key, value)
+            bodyParameterMap[key] = value
             return this@PostBuilder
         }
 
@@ -437,21 +458,20 @@ data class KNetworkRequest private constructor(
     class PutRequestBuilder(
         url: String,
         converter: ParserFactory,
-        requestType: RequestMethod =RequestMethod.Put
+        requestType: RequestMethod = RequestMethod.Put
     ) : PostBuilder(url, converter, requestType)
 
     class DeleteRequestBuilder(
         url: String,
         converter: ParserFactory,
-        requestType: RequestMethod =RequestMethod.Delete
+        requestType: RequestMethod = RequestMethod.Delete
     ) : PostBuilder(url, converter, requestType)
 
     class PatchRequestBuilder(
         url: String,
         converter: ParserFactory,
-        requestType: RequestMethod =RequestMethod.Patch
+        requestType: RequestMethod = RequestMethod.Patch
     ) : PostBuilder(url, converter, requestType)
-
 
 
     fun getHeaders(): Headers {

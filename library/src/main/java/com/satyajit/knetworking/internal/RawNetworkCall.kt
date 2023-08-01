@@ -2,10 +2,9 @@ package com.satyajit.knetworking.internal
 
 import com.satyajit.knetworking.KNetworkRequest
 import com.satyajit.knetworking.RequestMethod
-import kotlinx.coroutines.Dispatchers
+import com.satyajit.knetworking.dispacther.DispatcherProviderImpl
 import kotlinx.coroutines.withContext
 import okhttp3.FormBody
-import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType
@@ -21,20 +20,21 @@ import java.io.File
 
 class RawNetworkCall(
     private val kNetworkRequest: KNetworkRequest,
-    private val okHttpClient: OkHttpClient
+    private val okHttpClient: OkHttpClient,
+    private val dispatchers: DispatcherProviderImpl
 ) {
 
     companion object {
-        private const val sUserAgent = "UserAgent"
+        private const val USER_AGENT = "UserAgent"
     }
 
-    private val mApplicationJsonString: String? = null
-    private val mStringBody: String? = null
-    private val mByte: ByteArray? = null
-    private val mFile: File? = null
-    private val JSON_MEDIA_TYPE: MediaType = "application/json; charset=utf-8".toMediaType()
-    private val MEDIA_TYPE_MARKDOWN: MediaType = "text/x-markdown; charset=utf-8".toMediaType()
-    private val customMediaType: MediaType? = null
+    private val _applicationJsonString: String? = null
+    private val _stringBody: String? = null
+    private val _byte: ByteArray? = null
+    private val _file: File? = null
+    private val _jsonMediaType: MediaType = "application/json; charset=utf-8".toMediaType()
+    private val _mediaTypeMarkDown: MediaType = "text/x-markdown; charset=utf-8".toMediaType()
+    private val _customMediaType: MediaType? = null
 
     suspend inline fun run(
         crossinline onSuccess: (response: String) -> Unit = {},
@@ -48,54 +48,53 @@ class RawNetworkCall(
 
 
     suspend fun run(listener: KNetworkRequest.Listener) {
-        withContext(Dispatchers.IO) {
+        withContext(dispatchers.getDispatcherIO()) {
 
             val url = getUrlWithAllParams(kNetworkRequest)
-            var requestBuilder = Request.Builder().url(url)
-            addHeadersToRequestBuilder(requestBuilder, kNetworkRequest)
-            val requestBody: RequestBody?
+            var reqBuilder = Request.Builder().url(url)
+            addHeadersToRequestBuilder(reqBuilder, kNetworkRequest)
 
             when (kNetworkRequest.requestType) {
                 RequestMethod.Get -> {
-                    requestBuilder = requestBuilder.get()
+                    reqBuilder = reqBuilder.get()
                 }
 
                 RequestMethod.Head -> {
-                    requestBuilder = requestBuilder.get()
+                    reqBuilder = reqBuilder.get()
                 }
 
                 RequestMethod.Post -> {
-                    requestBody = getRequestBody(kNetworkRequest)
-                    requestBuilder = requestBuilder.post(requestBody)
+                    val requestBody = getRequestBody(kNetworkRequest)
+                    reqBuilder = reqBuilder.post(requestBody)
                 }
 
                 RequestMethod.Put -> {
-                    requestBody = getRequestBody(kNetworkRequest)
-                    requestBuilder = requestBuilder.post(requestBody)
+                    val requestBody = getRequestBody(kNetworkRequest)
+                    reqBuilder = reqBuilder.post(requestBody)
                 }
 
                 RequestMethod.Patch -> {
-                    requestBody = getRequestBody(kNetworkRequest)
-                    requestBuilder = requestBuilder.post(requestBody)
+                    val requestBody = getRequestBody(kNetworkRequest)
+                    reqBuilder = reqBuilder.post(requestBody)
                 }
 
                 RequestMethod.Options -> {
-                    requestBuilder = requestBuilder.get()
+                    reqBuilder = reqBuilder.get()
                 }
 
                 RequestMethod.Delete -> {
-                    requestBody = getRequestBody(kNetworkRequest)
-                    requestBuilder = requestBuilder.post(requestBody)
+                    val requestBody = getRequestBody(kNetworkRequest)
+                    reqBuilder = reqBuilder.post(requestBody)
                 }
 
             }
 
-            makeNetworkCall(requestBuilder.build(), listener)
+            makeNetworkCall(reqBuilder.build(), listener)
         }
     }
 
 
-    fun getUrlWithAllParams(kNetworkRequest: KNetworkRequest): String {
+    private fun getUrlWithAllParams(kNetworkRequest: KNetworkRequest): String {
         var tempUrl: String = kNetworkRequest.url
 
         kNetworkRequest.pathParametersMap?.let { pathParameterMap ->
@@ -103,7 +102,7 @@ class RawNetworkCall(
                 if (tempUrl.contains("{$key}")) {
                     tempUrl = tempUrl.replace("{$key}", value)
                 } else {
-                    throw Exception("Url doesnot have the pathParam you have provided")
+                    throw Exception("Url does n't have the path param you have provided")
                 }
             }
         }
@@ -123,44 +122,34 @@ class RawNetworkCall(
 
 
     private fun addHeadersToRequestBuilder(builder: Request.Builder, request: KNetworkRequest) {
-        if (request.userAgent != null) {
-            builder.addHeader("UserAgent", request.userAgent!!)
-        } else if (request.userAgent.isNullOrEmpty()) {
-            request.userAgent = sUserAgent
-            builder.addHeader("UserAgent", request.userAgent!!)
-        }
-
-        val requestHeaders: Headers = request.getHeaders()
-
-        builder.headers(requestHeaders)
-
+        builder.addHeader(KNetworkingConstant.USER_AGENT, request.userAgent)
+        builder.headers(request.getHeaders())
     }
 
-
     private fun getRequestBody(request: KNetworkRequest): RequestBody {
-        return if (mApplicationJsonString != null) {
-            if (customMediaType != null) {
-                mApplicationJsonString.toRequestBody(customMediaType)
+        return if (_applicationJsonString != null) {
+            if (_customMediaType != null) {
+                _applicationJsonString.toRequestBody(_customMediaType)
             } else {
-                mApplicationJsonString.toRequestBody(JSON_MEDIA_TYPE)
+                _applicationJsonString.toRequestBody(_jsonMediaType)
             }
-        } else if (mStringBody != null) {
-            if (customMediaType != null) {
-                mStringBody.toRequestBody(customMediaType)
+        } else if (_stringBody != null) {
+            if (_customMediaType != null) {
+                _stringBody.toRequestBody(_customMediaType)
             } else {
-                mStringBody.toRequestBody(MEDIA_TYPE_MARKDOWN)
+                _stringBody.toRequestBody(_mediaTypeMarkDown)
             }
-        } else if (mFile != null) {
-            if (customMediaType != null) {
-                mFile.asRequestBody(customMediaType)
+        } else if (_file != null) {
+            if (_customMediaType != null) {
+                _file.asRequestBody(_customMediaType)
             } else {
-                mFile.asRequestBody(MEDIA_TYPE_MARKDOWN)
+                _file.asRequestBody(_mediaTypeMarkDown)
             }
-        } else if (mByte != null) {
-            if (customMediaType != null) {
-                mByte.toRequestBody(customMediaType, 0, mByte.size)
+        } else if (_byte != null) {
+            if (_customMediaType != null) {
+                _byte.toRequestBody(_customMediaType, 0, _byte.size)
             } else {
-                mByte.toRequestBody(MEDIA_TYPE_MARKDOWN, 0, mByte.size)
+                _byte.toRequestBody(_mediaTypeMarkDown, 0, _byte.size)
             }
         } else {
             val builder = FormBody.Builder()
