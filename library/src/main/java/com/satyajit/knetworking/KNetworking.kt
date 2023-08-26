@@ -23,7 +23,7 @@ open class KNetworking private constructor(
 
     private val dispatcher = NetworkDispatcher(kNetworkingConfig.okhttpClient)
     private val reqQueue = NetworkTaskRequestQueue(dispatcher)
-    fun enqueue(networkRequest: KNetworkRequest, listener: KNetworkRequest.Listener) {
+    fun enqueue(networkRequest: KNetworkRequest,responseClass : Any?, listener: KNetworkRequest.Listener) {
         networkRequest.listener = listener
         reqQueue.enqueue(request = networkRequest)
     }
@@ -67,10 +67,11 @@ open class KNetworking private constructor(
 
     inline fun enqueue(
         kNetworkRequest: KNetworkRequest,
-        crossinline onSuccess: (response: String) -> Unit = { _ -> },
+        responseClass : Any? = null,
+        crossinline onSuccess: (response: Any) -> Unit = { _ -> },
         crossinline onError: (error: String) -> Unit = { _ -> },
-    ) = enqueue(kNetworkRequest, object : KNetworkRequest.Listener {
-        override fun onSuccess(response: String) = onSuccess(response)
+    ) = enqueue(kNetworkRequest, responseClass, object : KNetworkRequest.Listener {
+        override fun onSuccess(response: Any) = onSuccess(response)
 
         override fun onError(error: String) = onError(error)
     })

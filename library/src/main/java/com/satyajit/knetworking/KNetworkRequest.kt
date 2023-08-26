@@ -1,5 +1,6 @@
 package com.satyajit.knetworking
 
+import com.satyajit.knetworking.internal.Converter
 import com.satyajit.knetworking.internal.KNetworkingConstant
 import com.satyajit.knetworking.internal.ParserFactory
 import com.satyajit.knetworking.utils.Utils
@@ -31,9 +32,10 @@ data class KNetworkRequest private constructor(
     internal var cacheControl: CacheControl? = null,
     internal var userAgent: String,
     internal var listener: Listener?,
+    internal var responseClass: Any?,
+    internal val converter: ParserFactory
 ) {
     internal lateinit var job: Job
-
 
     open class GetBuilder(
         private val url: String,
@@ -61,6 +63,8 @@ data class KNetworkRequest private constructor(
         private var userAgent: String = KNetworkingConstant.USER_AGENT_DEFAULT_VALUE
 
         private var listener: Listener? = null
+
+        private var responseClass: Any? = null
 
         fun setPriority(priority: Priority) = apply { this.priority = priority }
 
@@ -183,7 +187,9 @@ data class KNetworkRequest private constructor(
                 pathParametersMap = pathParametersMap,
                 cacheControl = cacheControl,
                 userAgent = userAgent,
-                listener = listener
+                listener = listener,
+                responseClass = responseClass,
+                converter = converter
             )
 
         }
@@ -233,6 +239,8 @@ data class KNetworkRequest private constructor(
         private var userAgent: String = KNetworkingConstant.USER_AGENT_DEFAULT_VALUE
 
         private var listener: Listener? = null
+
+        private var responseClass: Any? = null
 
         fun setPriority(priority: Priority) = apply { this.priority = priority }
 
@@ -450,7 +458,10 @@ data class KNetworkRequest private constructor(
                 queryParameterMap = queryParameterMap,
                 pathParametersMap = pathParametersMap,
                 cacheControl = cacheControl,
-                userAgent = userAgent, listener = listener
+                userAgent = userAgent,
+                listener = listener,
+                responseClass  = responseClass,
+                converter  = ParserFactory(),
             )
         }
     }
@@ -494,7 +505,7 @@ data class KNetworkRequest private constructor(
     }
 
     interface Listener {
-        fun onSuccess(response: String)
+        fun onSuccess(response: Any)
 
         fun onError(error: String)
     }

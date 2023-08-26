@@ -1,8 +1,9 @@
 package com.satyajit.knetworking.internal
 
 import com.google.gson.Gson
+import com.google.gson.JsonElement
 import com.google.gson.reflect.TypeToken
-import java.lang.Exception
+import java.io.FileReader
 import java.lang.reflect.Type
 
 
@@ -20,7 +21,9 @@ class ParserFactory {
         return emptyMap()
     }
 
-    fun getString(T:Any) :String{
+    fun getString(T: Any): String {
         return ""
     }
+
+   
 }
