@@ -21,12 +21,9 @@ class RawNetworkCall(
                 throw IOException("Unexpected code $response")
             }
 
-            if (responseType != null){
-                converter.getStringMap()
-            }else{
-                listener.onSuccess(response.body?.byteString().toString())
+            if (responseType != null) {
+                converter.convertJsonToObj(response, responseType!!.javaClass)
             }
-
         }
     }
 

@@ -9,24 +9,24 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 
-class NetworkDispatcher(private val okHttpClient: OkHttpClient){
+class NetworkDispatcher<T>(private val okHttpClient: OkHttpClient) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main +
             CoroutineExceptionHandler { _, _ ->
 
             })
 
-    private val  dispatchers = DispatcherProviderImpl()
+    private val dispatchers = DispatcherProviderImpl()
 
-    fun enqueue(req: KNetworkRequest) {
+    fun enqueue(req: KNetworkRequest<T>) {
         val job = scope.launch {
             execute(req)
         }
         req.job = job
     }
 
-    private suspend fun execute(request: KNetworkRequest) {
-        NetworkTask(request,okHttpClient,dispatchers).run(
+    private suspend fun execute(request: KNetworkRequest<T>) {
+        NetworkTask(request, okHttpClient, dispatchers).run(
             onSuccess = {
                 executeOnMainThread { request.listener?.onSuccess(it) }
             },

@@ -3,6 +3,7 @@ package com.example.ui.mainactivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.base.UiState
+import com.example.data.model.UserResponse
 import com.satyajit.knetworking.KNetworkRequest
 import com.satyajit.knetworking.KNetworking
 import com.satyajit.knetworking.Priority
@@ -11,14 +12,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import okhttp3.CacheControl
-import okhttp3.HttpUrl.Companion.toHttpUrl
 import java.util.concurrent.TimeUnit
 
 class MainViewModel(var kNetworking: KNetworking) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<UiState<String>>(UiState.Loading)
 
-    val uiState: StateFlow<UiState<String>> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<UiState<UserResponse>>(UiState.Loading)
+
+    val uiState: StateFlow<UiState<UserResponse>> = _uiState.asStateFlow()
 
     init {
         fetchAllUsers()
@@ -58,7 +59,7 @@ class MainViewModel(var kNetworking: KNetworking) : ViewModel() {
 
             .build()
 
-        val kNetworkRequestPost : KNetworkRequest = kNetworking.newPostRequestBuilder(url = "https://abcexample.in/api/post")
+        val kNetworkRequestPost = kNetworking.newPostRequestBuilder(url = "https://abcexample.in/api/post")
             .setTag("TestTag1")
             .setPriority(Priority.MEDIUM)
 
@@ -93,11 +94,12 @@ class MainViewModel(var kNetworking: KNetworking) : ViewModel() {
 
 
         viewModelScope.launch {
-            kNetworking.enqueue(kNetworkRequestGet, onSuccess = {
+            kNetworking.enqueue(kNetworkRequestGet, responseClass = UserResponse::class, onSuccess = {
                 _uiState.value = UiState.Success(it)
             }, onError = {
                 _uiState.value = UiState.Error(it)
             })
+
         }
 
     }

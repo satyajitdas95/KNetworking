@@ -1,13 +1,13 @@
 package com.satyajit.knetworking.internal
 
 import com.google.gson.Gson
-import com.google.gson.JsonElement
 import com.google.gson.reflect.TypeToken
-import java.io.FileReader
 import java.lang.reflect.Type
+import java.util.Objects
+import kotlin.reflect.KClass
 
 
-class ParserFactory {
+class ParserFactory<T> {
 
     private val gson = Gson()
 
@@ -25,5 +25,11 @@ class ParserFactory {
         return ""
     }
 
-   
+    fun convertJsonToObj(responseClass:T): T?{
+//        val type = TypeToken.get(responseClass)
+//        return gson.fromJson(gson.toJson(T), type)
+        return null
+    }
+
+
 }

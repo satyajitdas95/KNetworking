@@ -15,20 +15,22 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
+import java.io.IOException
+import kotlin.reflect.KClass
 
 
-class NetworkTask(
-    private val kNetworkRequest: KNetworkRequest,
+class NetworkTask<T>(
+    private val kNetworkRequest: KNetworkRequest<T>,
     private val okHttpClient: OkHttpClient,
     private val dispatchers: DispatcherProviderImpl
 ) {
 
 
-    suspend inline fun run(
-        crossinline onSuccess: (response: Any) -> Unit = {},
+    suspend  inline fun run(
+        crossinline onSuccess: (response: T) -> Unit = {},
         crossinline onError: (error: String) -> Unit = { _ -> },
     ) = run(object : KNetworkRequest.Listener {
-        override fun onSuccess(response: Any) = onSuccess(response)
+        override fun <T>  onSuccess(response: T) = onSuccess(response)
 
         override fun onError(error: String) = onError(error)
 
@@ -40,15 +42,29 @@ class NetworkTask(
             val okhttpRequestBuilder = OkhttpRequestBuilder(kNetworkRequest)
             val request = okhttpRequestBuilder.getRequest()
 
-            val rawNetworkCall = RawNetworkCall(
-                okHttpClient = okHttpClient,
-                req = request,
-                responseType = kNetworkRequest.responseClass,
-                converter = kNetworkRequest.converter,
-                listener = listener
-            )
+            okHttpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    listener.onError(response.message)
+                    throw IOException("Unexpected code $response")
+                }
 
-            rawNetworkCall.makeNetworkCall()
+                if (kNetworkRequest.responseClass != null) {
+                    kNetworkRequest.converter.convertJsonToObj(
+                        response,
+                        kNetworkRequest.responseClass
+                    )
+                }
+            }
+
+//            val rawNetworkCall = RawNetworkCall(
+//                okHttpClient = okHttpClient,
+//                req = request,
+//                responseType = kNetworkRequest.responseClass,
+//                converter = kNetworkRequest.converter,
+//                listener = listener
+//            )
+//
+//            rawNetworkCall.makeNetworkCall()
         }
     }
 

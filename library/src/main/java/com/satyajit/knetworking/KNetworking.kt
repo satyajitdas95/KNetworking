@@ -5,6 +5,7 @@ import com.satyajit.knetworking.internal.Converter
 import com.satyajit.knetworking.internal.NetworkDispatcher
 import com.satyajit.knetworking.internal.NetworkTaskRequestQueue
 import com.satyajit.knetworking.internal.ParserFactory
+import kotlin.reflect.KClass
 
 open class KNetworking private constructor(
     context: Context,
@@ -22,9 +23,16 @@ open class KNetworking private constructor(
     }
 
     private val dispatcher = NetworkDispatcher(kNetworkingConfig.okhttpClient)
+
     private val reqQueue = NetworkTaskRequestQueue(dispatcher)
-    fun enqueue(networkRequest: KNetworkRequest,responseClass : Any?, listener: KNetworkRequest.Listener) {
+
+    fun <T> enqueue(
+        networkRequest: KNetworkRequest<T>,
+        responseClass: T,
+        listener: KNetworkRequest.Listener
+    ) {
         networkRequest.listener = listener
+        networkRequest.responseClass = responseClass
         reqQueue.enqueue(request = networkRequest)
     }
 
@@ -66,14 +74,14 @@ open class KNetworking private constructor(
 
 
     inline fun enqueue(
-        kNetworkRequest: KNetworkRequest,
-        responseClass : Any? = null,
-        crossinline onSuccess: (response: Any) -> Unit = { _ -> },
+        kNetworkRequest: KNetworkRequest<T>,
+        responseClass: T,
+        crossinline onSuccess: (response: T) -> Unit = { _ -> },
         crossinline onError: (error: String) -> Unit = { _ -> },
     ) = enqueue(kNetworkRequest, responseClass, object : KNetworkRequest.Listener {
-        override fun onSuccess(response: Any) = onSuccess(response)
-
+        override fun <T> onSuccess(responseClass: T) = onSuccess(responseClass)
         override fun onError(error: String) = onError(error)
+
     })
 
 }

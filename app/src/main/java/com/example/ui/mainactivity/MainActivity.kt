@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
 
                         is UiState.Success->{
 //                            ListOfUsers(uiState.data)
-                            Text(text = uiState.data)
+                            Text(text = uiState.data.results[0].phone ?: "")
                         }
                     }
 
