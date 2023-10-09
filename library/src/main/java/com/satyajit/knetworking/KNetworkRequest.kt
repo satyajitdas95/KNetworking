@@ -2,7 +2,6 @@ package com.satyajit.knetworking
 
 import com.satyajit.knetworking.internal.Converter
 import com.satyajit.knetworking.internal.KNetworkingConstant
-import com.satyajit.knetworking.internal.ParserFactory
 import com.satyajit.knetworking.utils.Utils
 import kotlinx.coroutines.Job
 import okhttp3.CacheControl
@@ -11,11 +10,9 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
-import kotlin.reflect.KClass
-import kotlin.system.measureTimeMillis
 
 
-data class KNetworkRequest <T> private constructor(
+data class KNetworkRequest internal constructor(
     internal var requestType: RequestMethod,
     internal var priority: Priority,
     internal var requestID: Int,
@@ -32,16 +29,14 @@ data class KNetworkRequest <T> private constructor(
     internal var urlEncodedFormBodyParameterMap: HashMap<String, String>? = null,
     internal var cacheControl: CacheControl? = null,
     internal var userAgent: String,
-    internal var listener: Listener?,
-    internal var responseClass: T?,
-    internal val converter: ParserFactory<T>
+    internal val converter: Converter
 ) {
     internal lateinit var job: Job
 
-    open class GetBuilder<T>(
+    open class GetBuilder(
         private val url: String,
 
-        private val converter: ParserFactory<T>,
+        private val converter: Converter,
 
         private var requestType: RequestMethod = RequestMethod.Get
     ) {
@@ -65,15 +60,11 @@ data class KNetworkRequest <T> private constructor(
 
         private var userAgent: String = KNetworkingConstant.USER_AGENT_DEFAULT_VALUE
 
-        private var listener: Listener? = null
-
-        private var responseClass: T? = null
-
         fun setPriority(priority: Priority) = apply { this.priority = priority }
 
         fun setTag(tag: String) = apply { this.tag = tag }
 
-        fun setHeaders(key: String, value: String): GetBuilder<T> {
+        fun setHeaders(key: String, value: String): GetBuilder {
             var headerList: MutableList<String>? = headersMap[key]
             if (headerList == null) {
                 headerList = mutableListOf()
@@ -87,11 +78,11 @@ data class KNetworkRequest <T> private constructor(
         }
 
 
-        fun setHeaders(headerMap: HashMap<String, String>): GetBuilder<T> {
+        fun setHeaders(headerMap: HashMap<String, String>): GetBuilder {
             return setHeaders(headerMap.toMap())
         }
 
-        fun setHeaders(headerMap: Map<String, String>): GetBuilder<T> {
+        fun setHeaders(headerMap: Map<String, String>): GetBuilder {
             headerMap.run {
                 for ((key, value) in this.entries) {
                     setHeaders(key = key, value = value)
@@ -101,7 +92,7 @@ data class KNetworkRequest <T> private constructor(
             return this
         }
 
-        fun setHeaders(T: Any): GetBuilder<T> {
+        fun setHeaders(T: Any): GetBuilder {
             return this.apply {
                 setHeaders(
                     converter.getStringMap(T)
@@ -109,7 +100,7 @@ data class KNetworkRequest <T> private constructor(
             }
         }
 
-        fun setQueryParameter(key: String, value: String): GetBuilder<T> {
+        fun setQueryParameter(key: String, value: String): GetBuilder {
             var list: MutableList<String>? = queryParameterMap[key]
 
             if (list == null) {
@@ -125,11 +116,11 @@ data class KNetworkRequest <T> private constructor(
         }
 
 
-        fun setQueryParameter(queryParameterMap: HashMap<String, String>): GetBuilder<T> {
+        fun setQueryParameter(queryParameterMap: HashMap<String, String>): GetBuilder {
             return this@GetBuilder.setQueryParameter(queryParameterMap.toMap())
         }
 
-        fun setQueryParameter(queryParameterMap: Map<String, String>): GetBuilder<T> {
+        fun setQueryParameter(queryParameterMap: Map<String, String>): GetBuilder {
             queryParameterMap.let {
                 for ((key, value) in it.entries) {
                     setQueryParameter(key, value)
@@ -138,7 +129,7 @@ data class KNetworkRequest <T> private constructor(
             return this@GetBuilder
         }
 
-        fun setQueryParameter(T: Any): GetBuilder<T> {
+        fun setQueryParameter(T: Any): GetBuilder {
             T.run {
                 setQueryParameter(
                     converter.getStringMap(this)
@@ -147,22 +138,22 @@ data class KNetworkRequest <T> private constructor(
             return this@GetBuilder
         }
 
-        fun setPathParameter(key: String, value: String): GetBuilder<T> {
+        fun setPathParameter(key: String, value: String): GetBuilder {
             this.pathParametersMap[key] = value
             return this@GetBuilder
         }
 
-        fun setPathParameter(pathParameterMap: Map<String, String>): GetBuilder<T> {
+        fun setPathParameter(pathParameterMap: Map<String, String>): GetBuilder {
             this.pathParametersMap.putAll(pathParameterMap)
             return this@GetBuilder
         }
 
-        fun setPathParameter(pathParameterMap: HashMap<String, String>): GetBuilder<T> {
+        fun setPathParameter(pathParameterMap: HashMap<String, String>): GetBuilder {
             return this@GetBuilder.setPathParameter(pathParameterMap.toMap())
         }
 
 
-        fun setPathParameter(T: Any): GetBuilder<T> {
+        fun setPathParameter(T: Any): GetBuilder {
             T.apply {
                 setPathParameter(
                     converter.getStringMap(this)
@@ -178,8 +169,8 @@ data class KNetworkRequest <T> private constructor(
         fun setUserAgent(userAgent: String) = apply { this@GetBuilder.userAgent = userAgent }
 
 
-        fun build(): KNetworkRequest<T> {
-            return KNetworkRequest(
+        fun build(): KNetworkRequest {
+            return com.satyajit.knetworking.KNetworkRequest(
                 requestType = requestMethod,
                 priority = priority,
                 requestID = requestID,
@@ -190,23 +181,21 @@ data class KNetworkRequest <T> private constructor(
                 pathParametersMap = pathParametersMap,
                 cacheControl = cacheControl,
                 userAgent = userAgent,
-                listener = listener,
-                responseClass = responseClass,
                 converter = converter
             )
 
         }
     }
 
-    class HeadBuilder<T>(
+    class HeadBuilder(
         url: String,
-        converter: ParserFactory<T>,
+        converter: Converter,
         requestType: RequestMethod = RequestMethod.Head
-    ) : GetBuilder<T>(url = url, converter = converter, requestType = requestType)
+    ) : GetBuilder(url = url, converter = converter, requestType = requestType)
 
-    open class PostBuilder<T>(
+    open class PostBuilder(
         url: String,
-        private val converter: ParserFactory<T>,
+        private val converter: Converter,
         requestType: RequestMethod = RequestMethod.Post
     ) {
         private val requestMethod: RequestMethod = requestType
@@ -241,15 +230,13 @@ data class KNetworkRequest <T> private constructor(
 
         private var userAgent: String = KNetworkingConstant.USER_AGENT_DEFAULT_VALUE
 
-        private var listener: Listener? = null
-
         private var responseClass = null
 
         fun setPriority(priority: Priority) = apply { this.priority = priority }
 
         fun setTag(tag: String) = apply { this.tag = tag }
 
-        fun setHeaders(key: String, value: String): PostBuilder<T> {
+        fun setHeaders(key: String, value: String): PostBuilder {
             var headerList: MutableList<String>? = headersMap[key]
             if (headerList == null) {
                 headerList = mutableListOf()
@@ -263,11 +250,11 @@ data class KNetworkRequest <T> private constructor(
         }
 
 
-        fun setHeaders(headerMap: HashMap<String, String>): PostBuilder<T> {
+        fun setHeaders(headerMap: HashMap<String, String>): PostBuilder {
             return setHeaders(headerMap.toMap())
         }
 
-        fun setHeaders(headerMap: Map<String, String>): PostBuilder<T> {
+        fun setHeaders(headerMap: Map<String, String>): PostBuilder {
             headerMap.run {
                 for ((key, value) in this.entries) {
                     setHeaders(key = key, value = value)
@@ -277,7 +264,7 @@ data class KNetworkRequest <T> private constructor(
             return this
         }
 
-        fun setHeaders(T: Any): PostBuilder<T> {
+        fun setHeaders(T: Any): PostBuilder {
             return this.apply {
                 setHeaders(
                     converter.getStringMap(T)
@@ -285,7 +272,7 @@ data class KNetworkRequest <T> private constructor(
             }
         }
 
-        fun setQueryParameter(key: String, value: String, isEncoded: Boolean = false): PostBuilder<T> {
+        fun setQueryParameter(key: String, value: String, isEncoded: Boolean = false): PostBuilder {
             var list: MutableList<String>? = queryParameterMap[key]
 
             if (list == null) {
@@ -310,7 +297,7 @@ data class KNetworkRequest <T> private constructor(
         fun setQueryParameter(
             queryParameterMap: HashMap<String, String>,
             isEncoded: Boolean = false
-        ): PostBuilder<T> {
+        ): PostBuilder {
             return this@PostBuilder.setQueryParameter(
                 queryParameterMap = queryParameterMap.toMap(),
                 isEncoded = isEncoded
@@ -320,7 +307,7 @@ data class KNetworkRequest <T> private constructor(
         fun setQueryParameter(
             queryParameterMap: Map<String, String>,
             isEncoded: Boolean = false
-        ): PostBuilder<T> {
+        ): PostBuilder {
             queryParameterMap.let {
                 for ((key, value) in it.entries) {
                     setQueryParameter(key = key, value = value, isEncoded = isEncoded)
@@ -329,7 +316,7 @@ data class KNetworkRequest <T> private constructor(
             return this@PostBuilder
         }
 
-        fun setQueryParameter(T: Any, isEncoded: Boolean = false): PostBuilder<T> {
+        fun setQueryParameter(T: Any, isEncoded: Boolean = false): PostBuilder {
             T.run {
                 setQueryParameter(
                     converter.getStringMap(this), isEncoded
@@ -338,7 +325,7 @@ data class KNetworkRequest <T> private constructor(
             return this@PostBuilder
         }
 
-        fun setPathParameter(key: String, value: String, isEncoded: Boolean = false): PostBuilder<T> {
+        fun setPathParameter(key: String, value: String, isEncoded: Boolean = false): PostBuilder {
             this.pathParametersMap[key] = Utils.encodeValue(value, isEncoded)
             return this@PostBuilder
         }
@@ -346,7 +333,7 @@ data class KNetworkRequest <T> private constructor(
         fun setPathParameter(
             pathParameterMap: Map<String, String>,
             isEncoded: Boolean = false
-        ): PostBuilder<T> {
+        ): PostBuilder {
             val mutablePathParamMap = pathParameterMap.toMutableMap()
             mutablePathParamMap.forEach { it ->
                 mutablePathParamMap[it.key] = Utils.encodeValue(it.value, isEncoded)
@@ -358,7 +345,7 @@ data class KNetworkRequest <T> private constructor(
         fun setPathParameter(
             pathParameterMap: HashMap<String, String>,
             isEncoded: Boolean = false
-        ): PostBuilder<T> {
+        ): PostBuilder {
             return this@PostBuilder.setPathParameter(
                 pathParameterMap = pathParameterMap.toMap(),
                 isEncoded = isEncoded
@@ -366,7 +353,7 @@ data class KNetworkRequest <T> private constructor(
         }
 
 
-        fun setPathParameter(T: Any, isEncoded: Boolean = false): PostBuilder<T> {
+        fun setPathParameter(T: Any, isEncoded: Boolean = false): PostBuilder {
             T.apply {
                 setPathParameter(
                     pathParameterMap = converter.getStringMap(this), isEncoded = isEncoded
@@ -382,17 +369,17 @@ data class KNetworkRequest <T> private constructor(
         fun setUserAgent(userAgent: String) = apply { this@PostBuilder.userAgent = userAgent }
 
 
-        fun setBodyParameter(key: String, value: String): PostBuilder<T> {
+        fun setBodyParameter(key: String, value: String): PostBuilder {
             bodyParameterMap[key] = value
             return this@PostBuilder
         }
 
-        fun setBodyParameter(bodyParameterMap: Map<String, String>): PostBuilder<T> {
+        fun setBodyParameter(bodyParameterMap: Map<String, String>): PostBuilder {
             this.bodyParameterMap.putAll(bodyParameterMap)
             return this@PostBuilder
         }
 
-        fun setBodyParameter(T: Any?): PostBuilder<T> {
+        fun setBodyParameter(T: Any?): PostBuilder {
             T?.let {
                 bodyParameterMap.putAll(
                     converter.getStringMap(it)
@@ -401,59 +388,59 @@ data class KNetworkRequest <T> private constructor(
             return this@PostBuilder
         }
 
-        fun setUrlEncodeFormBodyParameter(key: String, value: String): PostBuilder<T> {
+        fun setUrlEncodeFormBodyParameter(key: String, value: String): PostBuilder {
             urlEncodedFormBodyParameterMap[key] = value
             return this@PostBuilder
         }
 
-        fun setUrlEncodeFormBodyParameter(bodyParameterMap: Map<String, String>): PostBuilder<T> {
+        fun setUrlEncodeFormBodyParameter(bodyParameterMap: Map<String, String>): PostBuilder {
             urlEncodedFormBodyParameterMap.putAll(bodyParameterMap)
             return this@PostBuilder
         }
 
-        fun setUrlEncodeFormBodyParameter(T: Any?): PostBuilder<T> {
+        fun setUrlEncodeFormBodyParameter(T: Any?): PostBuilder {
             T?.let {
                 urlEncodedFormBodyParameterMap.putAll(converter.getStringMap(it))
             }
             return this@PostBuilder
         }
 
-        fun setApplicationJsonBody(T: Any?): PostBuilder<T> {
+        fun setApplicationJsonBody(T: Any?): PostBuilder {
             T?.let {
                 applicationJsonString = converter.getString(it)
             }
             return this@PostBuilder
         }
 
-        fun setJSONObjectBody(jsonObject: JSONObject): PostBuilder<T> {
+        fun setJSONObjectBody(jsonObject: JSONObject): PostBuilder {
             applicationJsonString = jsonObject.toString()
             return this@PostBuilder
         }
 
-        fun setJSONArrayBody(jsonArray: JSONArray?): PostBuilder<T> {
+        fun setJSONArrayBody(jsonArray: JSONArray?): PostBuilder {
             if (jsonArray != null) {
                 applicationJsonString = jsonArray.toString()
             }
             return this@PostBuilder
         }
 
-        fun setStringBody(stringBody: String): PostBuilder<T> {
+        fun setStringBody(stringBody: String): PostBuilder {
             this.stringBody = stringBody
             return this@PostBuilder
         }
 
-        fun setFileBody(file: File): PostBuilder<T> {
+        fun setFileBody(file: File): PostBuilder {
             this.file = file
             return this@PostBuilder
         }
 
-        fun setContentType(contentType: String): PostBuilder<T> {
+        fun setContentType(contentType: String): PostBuilder {
             customContentType = contentType
             return this@PostBuilder
         }
 
 
-        fun build(): KNetworkRequest<T> {
+        fun build(): KNetworkRequest {
             return KNetworkRequest(
                 requestType = requestMethod,
                 priority = priority,
@@ -471,30 +458,28 @@ data class KNetworkRequest <T> private constructor(
                 pathParametersMap = pathParametersMap,
                 cacheControl = cacheControl,
                 userAgent = userAgent,
-                listener = listener,
-                responseClass = responseClass,
-                converter = ParserFactory(),
+                converter = converter
             )
         }
     }
 
-    class PutRequestBuilder<T>(
+    class PutRequestBuilder(
         url: String,
-        converter: ParserFactory<T>,
+        converter: Converter,
         requestType: RequestMethod = RequestMethod.Put
-    ) : PostBuilder<T>(url, converter, requestType)
+    ) : PostBuilder(url, converter, requestType)
 
-    class DeleteRequestBuilder<T>(
+    class DeleteRequestBuilder(
         url: String,
-        converter: ParserFactory<T>,
+        converter: Converter,
         requestType: RequestMethod = RequestMethod.Delete
-    ) : PostBuilder<T>(url, converter, requestType)
+    ) : PostBuilder(url, converter, requestType)
 
-    class PatchRequestBuilder<T>(
+    class PatchRequestBuilder(
         url: String,
-        converter: ParserFactory<T>,
+        converter: Converter,
         requestType: RequestMethod = RequestMethod.Patch
-    ) : PostBuilder<T>(url, converter, requestType)
+    ) : PostBuilder(url, converter, requestType)
 
 
     fun getHeaders(): Headers {
@@ -514,12 +499,6 @@ data class KNetworkRequest <T> private constructor(
             e.printStackTrace()
         }
         return builder.build()
-    }
-
-    interface Listener {
-        fun <T> onSuccess(responseClass: T)
-
-        fun onError(error: String)
     }
 
 }

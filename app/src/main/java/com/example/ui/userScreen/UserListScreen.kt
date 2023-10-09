@@ -45,7 +45,7 @@ user:UserResponse.Users
         ) {
 
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current).data(user.picture?.medium)
+                model = ImageRequest.Builder(LocalContext.current).data(user.avatar)
                     .crossfade(true).build(),
                 contentDescription = "News Thumbnail",
                 contentScale = ContentScale.Crop,
@@ -62,16 +62,16 @@ user:UserResponse.Users
                 modifier = Modifier.fillMaxWidth(0.5f)
             ) {
                 Text(
-                    text = "$user.name",
+                    text = "${user.firstName} ${user.lastName}",
                     style = TextStyle(fontSize = 20.sp)
                 )
                 Text(
-                    text = "Phone : ${user.phone}.",
+                    text = "Phone : ${user.email}.",
                     style = TextStyle(fontSize = 16.sp)
                 )
 
                 Text(
-                    text = "Country: ${user.location?.country}",
+                    text = "Country: ${user.id}",
                     style = TextStyle(fontSize = 16.sp)
                 )
             }

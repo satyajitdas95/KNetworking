@@ -4,21 +4,23 @@ import android.content.Context
 import com.satyajit.knetworking.internal.Converter
 import com.satyajit.knetworking.internal.NetworkDispatcher
 import com.satyajit.knetworking.internal.NetworkTaskRequestQueue
-import com.satyajit.knetworking.internal.ParserFactory
-import kotlin.reflect.KClass
 
 open class KNetworking private constructor(
     context: Context,
     private val kNetworkingConfig: KNetworkingConfig,
-    private val converter: ParserFactory = ParserFactory()
+    private val converter: Converter
 ) {
 
     companion object {
         fun create(
             context: Context,
-            kNetworkingConfig: KNetworkingConfig = KNetworkingConfig(), converter: Converter? = null
+            kNetworkingConfig: KNetworkingConfig = KNetworkingConfig(), converter: Converter
         ): KNetworking {
-            return KNetworking(context = context, kNetworkingConfig = kNetworkingConfig)
+            return KNetworking(
+                context = context,
+                kNetworkingConfig = kNetworkingConfig,
+                converter = converter
+            )
         }
     }
 
@@ -26,15 +28,6 @@ open class KNetworking private constructor(
 
     private val reqQueue = NetworkTaskRequestQueue(dispatcher)
 
-    fun <T> enqueue(
-        networkRequest: KNetworkRequest<T>,
-        responseClass: T,
-        listener: KNetworkRequest.Listener
-    ) {
-        networkRequest.listener = listener
-        networkRequest.responseClass = responseClass
-        reqQueue.enqueue(request = networkRequest)
-    }
 
     fun newGetRequestBuilder(
         url: String,
@@ -73,15 +66,22 @@ open class KNetworking private constructor(
     }
 
 
-    inline fun enqueue(
-        kNetworkRequest: KNetworkRequest<T>,
-        responseClass: T,
-        crossinline onSuccess: (response: T) -> Unit = { _ -> },
-        crossinline onError: (error: String) -> Unit = { _ -> },
-    ) = enqueue(kNetworkRequest, responseClass, object : KNetworkRequest.Listener {
-        override fun <T> onSuccess(responseClass: T) = onSuccess(responseClass)
-        override fun onError(error: String) = onError(error)
+//    inline fun enqueue(
+//        kNetworkRequest: KNetworkRequest<T>,
+//        responseClass: T,
+//        crossinline onSuccess: (response: T) -> Unit = { _ -> },
+//        crossinline onError: (error: String) -> Unit = { _ -> },
+//    ) = enqueue(kNetworkRequest, responseClass, object : KNetworkRequest.Listener {
+//        override fun <T> onSuccess(responseClass: T) = onSuccess(responseClass)
+//        override fun onError(error: String) = onError(error)
+//    })
 
-    })
+    fun <T> enqueue(
+        networkRequest: KNetworkRequest,
+        onSuccess: (response: T) -> Unit = { _ -> },
+        onError: (error: String) -> Unit = { _ -> }
+    ) {
+        reqQueue.enqueue<T>(request = networkRequest, onSuccess, onError, converter = converter)
+    }
 
 }

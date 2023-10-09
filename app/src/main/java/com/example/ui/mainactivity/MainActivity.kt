@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
                     val mainViewModel: MainViewModel =
                         viewModel(factory = (application as MyApplication).provideSpecificViewModelFactory())
 
-                    val uiState=mainViewModel.uiState.collectAsState().value
+                    val uiState = mainViewModel.uiState.collectAsState().value
 
                     when(uiState){
                         is UiState.Error->{
@@ -44,8 +44,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         is UiState.Success->{
-//                            ListOfUsers(uiState.data)
-                            Text(text = uiState.data.results[0].phone ?: "")
+                            ListOfUsers(uiState.data)
                         }
                     }
 

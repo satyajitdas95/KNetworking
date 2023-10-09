@@ -1,29 +1,37 @@
 package com.satyajit.knetworking.internal
 
-import com.satyajit.knetworking.KNetworkRequest
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okio.IOException
 
 class RawNetworkCall(
-    private var okHttpClient: OkHttpClient,
-    private var req: Request,
-    private var responseType: Any?,
-    private var converter: ParserFactory,
-    private var listener: KNetworkRequest.Listener
+    private val okHttpClient: OkHttpClient,
+    private val req: Request,
+    private val converter: Converter,
+    private val scope: CoroutineScope
 ) {
 
-    fun makeNetworkCall(
+    fun <T> makeNetworkCall(
+        onSuccess: (T) -> Unit, onError: (error: String) -> Unit
     ) {
         okHttpClient.newCall(req).execute().use { response ->
             if (!response.isSuccessful) {
-                listener.onError(response.message)
+                executeOnMainThread { onError.invoke(response.message) }
                 throw IOException("Unexpected code $response")
             }
 
-            if (responseType != null) {
-                converter.convertJsonToObj(response, responseType!!.javaClass)
-            }
+            val response = converter.stringToObject<T>(response.body?.byteString().toString())
+
+            executeOnMainThread { onSuccess.invoke(response) }
+
+        }
+    }
+
+    private fun executeOnMainThread(block: () -> Unit) {
+        scope.launch {
+            block()
         }
     }
 

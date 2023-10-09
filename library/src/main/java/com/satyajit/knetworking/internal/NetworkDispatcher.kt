@@ -9,7 +9,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 
-class NetworkDispatcher<T>(private val okHttpClient: OkHttpClient) {
+class NetworkDispatcher(private val okHttpClient: OkHttpClient) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main +
             CoroutineExceptionHandler { _, _ ->
@@ -18,25 +18,33 @@ class NetworkDispatcher<T>(private val okHttpClient: OkHttpClient) {
 
     private val dispatchers = DispatcherProviderImpl()
 
-    fun enqueue(req: KNetworkRequest<T>) {
+    fun <T> enqueue(
+        req: KNetworkRequest,
+        onSuccess: (response: T) -> Unit,
+        onError: (error: String) -> Unit,
+        converter: Converter
+    ) {
         val job = scope.launch {
-            execute(req)
+            execute<T>(req, onSuccess, onError,converter)
         }
         req.job = job
     }
 
-    private suspend fun execute(request: KNetworkRequest<T>) {
-        NetworkTask(request, okHttpClient, dispatchers).run(
-            onSuccess = {
-                executeOnMainThread { request.listener?.onSuccess(it) }
-            },
-            onError = {
-                executeOnMainThread { request.listener?.onError(it) }
-            }
+
+    private suspend fun <T> execute(
+        request: KNetworkRequest,
+        onSuccess: (response: T) -> Unit,
+        onError: (error: String) -> Unit,
+        converter: Converter
+    ) {
+        NetworkTask(request, okHttpClient, dispatchers).run<T>(
+            scope,
+            onSuccess,
+            onError,converter
         )
     }
 
-    private fun executeOnMainThread(block: () -> Unit) {
+     fun executeOnMainThread(block: () -> Unit) {
         scope.launch {
             block()
         }
