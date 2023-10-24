@@ -75,7 +75,7 @@ class OkhttpRequestBuilder(private val kNetworkRequest: KNetworkRequest) {
                 if (tempUrl.contains("{$key}")) {
                     tempUrl = tempUrl.replace("{$key}", value)
                 } else {
-                    throw Exception("Url doesn't have the path param you have provided")
+                    throw NoSuchFieldException("Url doesn't have the path param you have provided")
                 }
             }
         }

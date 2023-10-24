@@ -1,6 +1,9 @@
 package com.satyajit.knetworking.internal
 
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -10,8 +13,12 @@ class RawNetworkCall(
     private val okHttpClient: OkHttpClient,
     private val req: Request,
     private val converter: Converter,
-    private val scope: CoroutineScope
 ) {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main +
+            CoroutineExceptionHandler { _, _ ->
+
+            })
 
     fun <T> makeNetworkCall(
         onSuccess: (T) -> Unit, onError: (error: String) -> Unit
@@ -22,9 +29,11 @@ class RawNetworkCall(
                 throw IOException("Unexpected code $response")
             }
 
-            val response = converter.stringToObject<T>(response.body?.byteString().toString())
-
-            executeOnMainThread { onSuccess.invoke(response) }
+            response.body!!.string().let { responseJson ->
+                val responseConverted = converter.stringToObject<T>(responseJson)
+                val res =responseConverted as T
+                executeOnMainThread { onSuccess.invoke(responseConverted)}
+            }
 
         }
     }

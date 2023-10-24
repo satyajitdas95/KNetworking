@@ -5,6 +5,7 @@ import com.satyajit.knetworking.dispacther.DispatcherProviderImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.io.IOException
 
 
@@ -24,16 +25,16 @@ class NetworkTask(
         withContext(dispatchers.getDispatcherIO()) {
 
             val okhttpRequestBuilder = OkhttpRequestBuilder(kNetworkRequest)
-            val request = okhttpRequestBuilder.getRequest()
+            val request : Request = okhttpRequestBuilder.getRequest()
 
             val rawNetworkCall = RawNetworkCall(
                 okHttpClient = okHttpClient,
                 req = request,
                 converter = converter,
-                scope = scope
             )
 
-            rawNetworkCall.makeNetworkCall(onSuccess = onSuccess, onError = onError)
+            rawNetworkCall.makeNetworkCall<T>(onSuccess = onSuccess, onError = onError)
+
         }
     }
 

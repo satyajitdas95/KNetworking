@@ -3,7 +3,11 @@ package com.example.ui.mainactivity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -25,8 +29,8 @@ class MainActivity : ComponentActivity() {
             KNetworkingExample {
                 // A surface container using the 'background' color from the theme
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    modifier = Modifier.fillMaxHeight().fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary
                 ) {
 
                     val mainViewModel: MainViewModel =
@@ -34,19 +38,26 @@ class MainActivity : ComponentActivity() {
 
                     val uiState = mainViewModel.uiState.collectAsState().value
 
-                    when(uiState){
-                        is UiState.Error->{
-                            showLoading()
+                    Column(modifier = Modifier.fillMaxHeight().fillMaxWidth()) {
+                        Button(onClick = { mainViewModel.fetchAllUsers() }) {
+                            Text(text = "Fetch Users")
                         }
 
-                        is UiState.Loading->{
+                        when (uiState) {
+                            is UiState.Error -> {
+                                showLoading()
+                            }
 
-                        }
+                            is UiState.Loading -> {
+                            }
 
-                        is UiState.Success->{
-                            ListOfUsers(uiState.data)
+                            is UiState.Success -> {
+                                ListOfUsers(uiState.data)
+                            }
                         }
                     }
+
+
 
                 }
             }

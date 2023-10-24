@@ -22,7 +22,7 @@ class MainViewModel(var kNetworking: KNetworking) : ViewModel() {
         fetchAllUsers()
     }
 
-    private fun fetchAllUsers() {
+     fun fetchAllUsers() {
         data class TestHeader(var authorization: String, var apikey: String)
         data class TestQueryParam(var id: String)
         data class TestPathParam(var abc: String)
@@ -33,24 +33,24 @@ class MainViewModel(var kNetworking: KNetworking) : ViewModel() {
                 .setTag("TestTag1")
                 .setPriority(Priority.MEDIUM)
 
-                .setHeaders("Header1", "HeaderValue1")
-                .setHeaders(mapOf(Pair("Header2", "HeaderValue2")))
-                .setHeaders(mutableMapOf(Pair("Header3", "HeaderValue3")))
-                .setHeaders(hashMapOf(Pair("Header4", "HeaderValue4")))
-                .setHeaders(TestHeader("Zahgr@1376n", "1234"))
-
-                .setQueryParameter("page", "2")
-                .setQueryParameter(mapOf(Pair("QueryParam2", "QueryParamValue2")))
-                .setQueryParameter(mutableMapOf(Pair("QueryParam3", "QueryParamValue3")))
-                .setQueryParameter(hashMapOf(Pair("QueryParam4", "QueryParamValue4")))
-                .setQueryParameter(TestQueryParam("QueryParamValue5"))
-
-                .setPathParameter("userID", "abc12")
-                .setPathParameter("orderId", "1242")
-                .setPathParameter(mapOf(Pair("PathParam2", "PathParamValue2")))
-                .setPathParameter(mutableMapOf(Pair("PathParam3", "PathParamValue3")))
-                .setPathParameter(hashMapOf(Pair("PathParam4", "PathParamValue4")))
-                .setPathParameter(TestPathParam("PathParamValue5"))
+//                .setHeaders("Header1", "HeaderValue1")
+//                .setHeaders(mapOf(Pair("Header2", "HeaderValue2")))
+//                .setHeaders(mutableMapOf(Pair("Header3", "HeaderValue3")))
+//                .setHeaders(hashMapOf(Pair("Header4", "HeaderValue4")))
+//                .setHeaders(TestHeader("Zahgr@1376n", "1234"))
+//
+//                .setQueryParameter("page", "2")
+//                .setQueryParameter(mapOf(Pair("QueryParam2", "QueryParamValue2")))
+//                .setQueryParameter(mutableMapOf(Pair("QueryParam3", "QueryParamValue3")))
+//                .setQueryParameter(hashMapOf(Pair("QueryParam4", "QueryParamValue4")))
+//                .setQueryParameter(TestQueryParam("QueryParamValue5"))
+//
+//                .setPathParameter("userID", "abc12")
+//                .setPathParameter("orderId", "1242")
+//                .setPathParameter(mapOf(Pair("PathParam2", "PathParamValue2")))
+//                .setPathParameter(mutableMapOf(Pair("PathParam3", "PathParamValue3")))
+//                .setPathParameter(hashMapOf(Pair("PathParam4", "PathParamValue4")))
+//                .setPathParameter(TestPathParam("PathParamValue5"))
 
                 .setCacheControl(CacheControl.Builder().noCache().maxAge(1, TimeUnit.DAYS).build())
                 .setUserAgent("AndroidApp")
@@ -93,7 +93,8 @@ class MainViewModel(var kNetworking: KNetworking) : ViewModel() {
 
 
 
-        kNetworking.enqueue<UserResponse>(kNetworkRequestGet, onSuccess = {
+        kNetworking.enqueue<UserResponse>(kNetworkRequestGet,
+            onSuccess = {
             _uiState.value = UiState.Success(it.data)
         }, onError = {
             _uiState.value = UiState.Error(it)

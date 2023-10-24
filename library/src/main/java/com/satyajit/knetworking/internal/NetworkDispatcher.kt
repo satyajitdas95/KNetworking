@@ -37,6 +37,7 @@ class NetworkDispatcher(private val okHttpClient: OkHttpClient) {
         onError: (error: String) -> Unit,
         converter: Converter
     ) {
+
         NetworkTask(request, okHttpClient, dispatchers).run<T>(
             scope,
             onSuccess,
