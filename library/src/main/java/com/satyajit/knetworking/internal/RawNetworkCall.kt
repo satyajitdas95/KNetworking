@@ -31,7 +31,7 @@ class RawNetworkCall(
 
             response.body!!.string().let { responseJson ->
                 val responseConverted = converter.stringToObject<T>(responseJson)
-                executeOnMainThread { onSuccess.invoke(responseConverted)}
+                executeOnMainThread { onSuccess.invoke(responseConverted) }
             }
 
         }

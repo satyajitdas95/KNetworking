@@ -93,7 +93,16 @@ class MainViewModel(var kNetworking: KNetworking) : ViewModel() {
 
 
 
-        kNetworking.enqueue<UserResponse>(kNetworkRequestGet,
+//         kNetworking.enqueue<UserResponse>(kNetworkRequestGet,
+//             onSuccess = {
+//                 _uiState.value = UiState.Success(it.data)
+//             }, onError = {
+//                 _uiState.value = UiState.Error(it)
+//             })
+
+         kNetworking.getClassType(UserResponse::class)
+
+         kNetworking.enqueue<UserResponse>(kNetworkRequestGet,
             onSuccess = {
             _uiState.value = UiState.Success(it.data)
         }, onError = {

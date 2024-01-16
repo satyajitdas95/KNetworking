@@ -4,6 +4,7 @@ import android.content.Context
 import com.satyajit.knetworking.internal.Converter
 import com.satyajit.knetworking.internal.NetworkDispatcher
 import com.satyajit.knetworking.internal.NetworkTaskRequestQueue
+import kotlin.reflect.KClass
 
 open class KNetworking private constructor(
     context: Context,
@@ -65,6 +66,10 @@ open class KNetworking private constructor(
         return KNetworkRequest.PatchRequestBuilder(url = url, converter)
     }
 
+    fun getClassType(clazz: Any) {
+        val classtype = clazz.javaClass
+    }
+
 
 //    inline fun enqueue(
 //        kNetworkRequest: KNetworkRequest<T>,
@@ -76,12 +81,13 @@ open class KNetworking private constructor(
 //        override fun onError(error: String) = onError(error)
 //    })
 
-    fun <T> enqueue(
+     inline fun <reified T> enqueue(
         networkRequest: KNetworkRequest,
-        onSuccess: (response: T) -> Unit = { _ -> },
-        onError: (error: String) -> Unit = { _ -> }
+        noinline onSuccess: (T) -> Unit = { _ -> },
+        noinline onError: (error: String) -> Unit = { _ -> }
     ) {
-        reqQueue.enqueue<T>(request = networkRequest, onSuccess, onError, converter = converter)
+         reqQueue.enqueue<T>(request = networkRequest, onSuccess, onError, converter = converter)
     }
+
 
 }
